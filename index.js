@@ -11,8 +11,8 @@ document.body.append(htmlSpec.head);
 // View of the spec
 document.body.append(specView);
 
-function handleHashChange() {
-  const id = location.hash.slice(1);
+function handleHashChange () {
+  const id = window.location.hash.slice(1);
   const selector = '#' + id;
 
   queue = queue.then(async () => {
@@ -23,8 +23,7 @@ function handleHashChange() {
       specView.append(el);
       if (el.id === id) {
         el.scrollIntoView({block: 'start'});
-      }
-      else {
+      } else {
         const targetEl = el.querySelector(selector);
         if (targetEl) {
           targetEl.scrollIntoView({block: 'start'});
@@ -34,12 +33,11 @@ function handleHashChange() {
   });
 }
 
-function addNext10() {
+function addNext10 () {
   queue = queue.then(async () => {
     const stream = htmlSpec.advance(specView.lastElementChild);
     let i = 0;
 
-    //
     for await (const el of iterateStream(stream)) {
       specView.append(el);
       i++;
@@ -48,7 +46,7 @@ function addNext10() {
   });
 }
 
-function addPrevious10() {
+function addPrevious10 () {
   queue = queue.then(async () => {
     let i = 0;
 
@@ -60,10 +58,9 @@ function addPrevious10() {
   });
 }
 
-if (location.hash) {
+if (window.location.hash) {
   handleHashChange();
-}
-else {
+} else {
   addNext10();
 }
 

@@ -1,11 +1,12 @@
 import { TextDecoderTransform } from './TextDecoderTransform.js';
 import { ParseTransform } from './ParseTransform.js';
+import { filterStream } from './streamUtils.js';
 
 const SPEC_URL = 'https://html.spec.whatwg.org/';
 const HEADING_RE = /H\d/;
 
 export class HtmlSpec {
-  constructor() {
+  constructor () {
     this._head = document.createElement('div');
     this._elements = [];
     const {readable, writable} = new TransformStream();
@@ -23,37 +24,37 @@ export class HtmlSpec {
   /**
    * Non-content elements from the spec, such as meta & style.
    */
-  get head() {
+  get head () {
     return this._head;
   }
   // Tee the original stream, leaving one for next time
   // and returning the other.
-  _freshStream() {
+  _freshStream () {
     const [one, two] = this._stream.tee();
     this._stream = one;
     return two;
   }
-  _filterElements() {
-    return new TransformStream({
-      transform: (node, controller) => {
-        // Skip non-element nodes. Don't care.
-        if (node.nodeType !== 1) return;
-        // Add head-style stuff to special element
-        if (node.matches('link, title, meta, style')) {
-          this._head.append(node);
-          return;
-        }
-        this._elements.push(node);
-        controller.enqueue(node);
+  _filterElements () {
+    return filterStream(node => {
+      // Skip non-element nodes. Don't care.
+      if (node.nodeType !== 1) return false;
+
+      // Add head-style stuff to special element
+      if (node.matches('link, title, meta, style')) {
+        this._head.append(node);
+        return false;
       }
-    })
+
+      this._elements.push(node);
+      return true;
+    });
   }
   /**
    * An iterator of top-level spec elements, start from a given element and moving backwards.
    *
    * @param {Element} from
    */
-  * reverse(from) {
+  * reverse (from) {
     if (!from) throw Error('Must define starting point');
     let index = this._elements.indexOf(from);
     if (index === -1) throw Error('Element not found');
@@ -67,17 +68,12 @@ export class HtmlSpec {
    *
    * @param {Element} from
    */
-  advance(from = undefined) {
+  advance (from = undefined) {
     let queueEls = !from;
 
-    return this._freshStream().pipeThrough(new TransformStream({
-      transform(el, controller) {
-        if (queueEls) {
-          controller.enqueue(el);
-          return;
-        }
-        queueEls = el === from;
-      }
+    return this._freshStream().pipeThrough(filterStream(el => {
+      if (queueEls) return true;
+      queueEls = (el === from);
     }));
   }
   /**
@@ -91,7 +87,7 @@ export class HtmlSpec {
    *
    * @param {string} id ID of an element in the HTML spec.
    */
-  getSectionById(id) {
+  getSectionById (id) {
     let addUntilHeadingLevel = 0;
     const selector = '#' + id;
 
@@ -104,14 +100,12 @@ export class HtmlSpec {
           } else {
             controller.enqueue(el);
           }
-        }
-        else if (el.id === id || el.querySelector(selector)) {
+        } else if (el.id === id || el.querySelector(selector)) {
           const elsToAdd = [el];
 
           if (HEADING_RE.test(el.tagName)) { // Start of a section?
             addUntilHeadingLevel = Number(el.tagName.slice(1));
-          }
-          else { // Try to find the start of the section.
+          } else { // Try to find the start of the section.
             for (const previousEl of this.reverse(el)) {
               elsToAdd.unshift(previousEl);
               if (HEADING_RE.test(previousEl.tagName)) {

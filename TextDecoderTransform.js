@@ -1,8 +1,8 @@
 export class TextDecoderTransform extends TransformStream {
-  constructor() {
+  constructor () {
     const decoder = new TextDecoder();
     super({
-      transform(chunk, controller) {
+      transform (chunk, controller) {
         controller.enqueue(decoder.decode(chunk, { stream: true }));
       }
     });

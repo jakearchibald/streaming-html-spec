@@ -1,21 +1,21 @@
-export function iterateStream(stream) {
+export function iterateStream (stream) {
   // Get a lock on the stream:
   const reader = stream.getReader();
 
   return {
-    next() {
+    next () {
       // Stream reads already resolve with {done, value}, so
       // we can just call read:
       return reader.read();
     },
-    return() {
+    return () {
       // Release the lock if the iterator terminates.
       reader.releaseLock();
       return {};
     },
     // for-await calls this on whatever it's passed, so
     // iterators tend to return themselves.
-    [Symbol.asyncIterator]() {
+    [Symbol.asyncIterator] () {
       return this;
     }
   };

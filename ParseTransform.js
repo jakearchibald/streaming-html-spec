@@ -1,5 +1,5 @@
 export class ParseTransform extends TransformStream {
-  constructor() {
+  constructor () {
     let controller;
     // Create iframe for piping the response
     const iframe = document.createElement('iframe');
@@ -9,7 +9,7 @@ export class ParseTransform extends TransformStream {
     // Give the iframe a body
     iframe.contentDocument.write('<!DOCTYPE html><body>');
 
-    function queueChildNodes() {
+    function queueChildNodes () {
       for (let node of [...iframe.contentDocument.body.childNodes]) {
         node.remove();
         controller.enqueue(node);
@@ -23,13 +23,13 @@ export class ParseTransform extends TransformStream {
     });
 
     super({
-      start(c) {
+      start (c) {
         controller = c;
       },
-      transform(chunk) {
+      transform (chunk) {
         iframe.contentDocument.write(chunk);
       },
-      flush() {
+      flush () {
         queueChildNodes();
         iframe.contentDocument.close();
       }
